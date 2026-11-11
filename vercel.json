@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/categoria/:id", "destination": "/index.html" },
+    { "source": "/artigo/:slug*", "destination": "/index.html" },
+    { "source": "/biblioteca", "destination": "/index.html" },
+    { "source": "/favoritos", "destination": "/index.html" }
+  ]
+}

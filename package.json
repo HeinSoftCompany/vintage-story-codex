@@ -1,0 +1,14 @@
+{
+  "name": "vintage-story-codex-brasil",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Interface comunitária de consulta à Vintage Story Wiki em português",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs",
+    "sync": "node scripts/sync-wiki.mjs",
+    "sync:full": "node scripts/sync-wiki.mjs --full"
+  },
+  "engines": {"node": ">=20"}
+}
