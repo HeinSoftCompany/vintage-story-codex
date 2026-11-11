@@ -19,11 +19,12 @@ O servidor inclui um proxy `/api/wiki` somente de leitura, para consultar a API 
 ## Deploy na Vercel
 
 1. Suba esta pasta para um repositório GitHub.
-2. Importe o repositório na Vercel, com **Framework Preset: Other** e **sem comando de build**.
-3. Mantenha o diretório raiz do projeto como diretório de saída (sem `dist`).
-4. As rotas são tratadas pelo arquivo `vercel.json`; a função serverless `api/wiki.js` serve artigos pesquisáveis.
+2. Importe o repositório na Vercel, com **Framework Preset: Other** (não `Node.js`).
+3. Use **Build Command: `npm run build`** e **Output Directory: `dist`**; **Root Directory: `./`**.
+4. O arquivo `vercel.json` também define esse framework/build/output, evitando servir apenas a pasta `public`.
+5. As rotas são tratadas pelo arquivo `vercel.json`; a função serverless `api/wiki.js` serve artigos pesquisáveis.
 
-Caso a Vercel esteja configurada para exigir diretório de saída, use uma configuração para projeto estático sem framework. A função serverless requer runtime Node.js suportado pela plataforma.
+Antes do deploy, você pode validar com `npm run build`: confirme que existem `dist/index.html`, `dist/src/app.js`, `dist/src/styles.css` e `dist/data/wiki-index.json`. O projeto não exige Vite/Next.js. A função serverless requer runtime Node.js suportado pela plataforma.
 
 ## Navegação e funções implementadas
 

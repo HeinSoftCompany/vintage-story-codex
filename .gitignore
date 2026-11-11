@@ -1,0 +1,8 @@
+# Saída gerada no deploy
+/dist/
+# Dependências e arquivos locais
+/node_modules/
+.vercel/
+.env
+.env.*
+.DS_Store

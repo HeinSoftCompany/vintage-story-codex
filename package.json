@@ -7,8 +7,11 @@
   "scripts": {
     "start": "node server.mjs",
     "dev": "node server.mjs",
+    "build": "node scripts/build.mjs",
     "sync": "node scripts/sync-wiki.mjs",
     "sync:full": "node scripts/sync-wiki.mjs --full"
   },
-  "engines": {"node": ">=20"}
+  "engines": {
+    "node": ">=20"
+  }
 }
