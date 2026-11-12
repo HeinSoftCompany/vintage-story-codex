@@ -7,6 +7,14 @@
   "cleanUrls": false,
   "rewrites": [
     {
+      "source": "/:locale(pt-br|en|es|de|fr|ja)/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/explorar",
+      "destination": "/index.html"
+    },
+    {
       "source": "/categoria/:id",
       "destination": "/index.html"
     },

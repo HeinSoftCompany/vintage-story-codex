@@ -1,6 +1,7 @@
 // Curadoria da Página Principal PT-BR da Vintage Story Wiki.
 // Slugs em inglês correspondem aos títulos canônicos da MediaWiki;
 // a aplicação tenta primeiro /pt-br e depois a página original.
+import { cleanWikiTitle } from './locale.js';
 const item = (label, slug, note = '') => ({ label, slug, note });
 
 export const categories = [
@@ -137,7 +138,7 @@ export const allCurated = categories.flatMap(cat => cat.subgroups.flatMap(sub =>
 export const uniqueCurated = [...new Map(allCurated.map(p => [p.slug.toLowerCase(), p])).values()];
 export const findCategory = id => categories.find(c => c.id === id);
 export const findArticle = slug => allCurated.find(a => a.slug.toLowerCase() === slug.toLowerCase());
-export const formatTitle = raw => { let str=String(raw||'');try{str=decodeURIComponent(str)}catch{}return str.replace(/_/g,' ').replace(/\/pt-br$/i,'').replace(/^Category:/,'Categoria:') };
+export const formatTitle = raw => { let str=String(raw||'');try{str=decodeURIComponent(str)}catch{}return cleanWikiTitle(str) };
 
 // Classificação aproximada para páginas que não aparecem na curadoria manual.
 // A wiki conserva as categorias de origem em sourceCategories; não presumir

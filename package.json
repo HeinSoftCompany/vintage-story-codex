@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Interface comunitária de consulta à Vintage Story Wiki em português",
+  "description": "Enciclopédia comunitária internacional para consultar a Vintage Story Wiki",
   "scripts": {
+    "test": "node --test scripts/test-i18n.mjs",
+    "test:ui": "node scripts/test-ui.mjs",
     "start": "node server.mjs",
     "dev": "node server.mjs",
     "build": "node scripts/build.mjs",

@@ -4,7 +4,21 @@ Protótipo navegável de enciclopédia **não oficial** para a comunidade de *Vi
 
 **Fonte de dados:** [Vintage Story Wiki em português](https://wiki.vintagestory.at/Main_Page/pt-br). O projeto **não é** a wiki oficial, não substitui a documentação da comunidade e não afirma ter copiado todas as páginas para o pacote.
 
-## Rodar no computador
+## Idiomas
+
+A interface está disponível em **português do Brasil, inglês, espanhol, alemão, francês e japonês**. O seletor fica no cabeçalho, inclusive no mobile. A escolha fica salva no navegador; o idioma explícito na URL tem prioridade. Links antigos sem prefixo continuam funcionando e recebem o idioma salvo, ou `pt-br` na primeira visita.
+
+Exemplos: `/pt-br/`, `/en/explorar`, `/es/biblioteca`, `/de/categoria/iniciantes`, `/fr/favoritos` e `/ja/artigo/Getting%20started`. Os nomes internos das rotas e os títulos canônicos dos artigos são estáveis em todos os idiomas. Ao trocar o idioma, a página, o artigo, os parâmetros e a âncora são preservados. Os favoritos são compartilhados entre idiomas neste navegador.
+
+O leitor tenta a versão da wiki no idioma escolhido (`/pt-br`, `/es`, `/de`, `/fr` ou `/ja`); em inglês usa o título original. Se a tradução não existir, abre o original em inglês com aviso visível. Falhas de rede mostram um erro de carregamento, sem afirmar que a tradução está ausente. Traduções da comunidade podem conter trechos ainda em inglês ou desatualizados. Créditos e links apontam para a página efetivamente exibida. Cópias locais em português só são usadas ao solicitar português.
+
+O índice local existente continua sendo um catálogo compartilhado de títulos canônicos, complementado pela curadoria. Ele não representa um índice completo de traduções nos seis idiomas. A busca também consulta a wiki ao vivo, prioriza o idioma selecionado e inclui resultados originais em inglês. Não há tradução automática de artigos, API de IA ou fluxo de revisão comunitária nesta etapa.
+
+Para ampliar a interface, configure o idioma em `src/locale.js` e acrescente uma coluna completa a `src/messages.js`. As traduções são aplicadas somente aos fragmentos da interface pelo módulo `src/i18n.js`; o HTML dos artigos da wiki permanece separado. Novas mensagens e textos da curadoria devem ter tradução em todas as colunas. As regras de publicação em `vercel.json` precisam incluir qualquer novo código de idioma.
+
+Validação: `npm test` verifica traduções, rotas e comportamento do cliente da wiki com respostas controladas. `npm run test:ui` verifica os seis idiomas num navegador Chromium em modo headless, com um servidor local e respostas da wiki simuladas. Por padrão usa o Brave no Windows; defina `CODEX_TEST_BROWSER` com o executável de Chrome, Chromium ou Brave para outra instalação. O teste usa um perfil temporário e não acessa o perfil pessoal do navegador.
+
+## Execução local
 
 Necessário **Node.js 20 ou superior**. Nenhuma dependência de terceiros é exigida.
 
