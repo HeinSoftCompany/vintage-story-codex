@@ -2,7 +2,7 @@
 // Set CODEX_TEST_BROWSER to a Chrome/Chromium/Brave executable on other systems.
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
-import {mkdtemp,readFile,rm} from 'node:fs/promises';
+import {mkdtemp,readFile,rm,mkdir,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {locales} from '../src/locale.js';
@@ -94,6 +94,22 @@ try{
     }
     console.log(`PASS ${locale.code}: mobile routes, articles, language and internal links`);
   }
+  await visit('/pt-br/biblioteca');
+  assert.equal(await evaluate('document.querySelectorAll(".library-item").length'),40);
+  const firstArticle=await evaluate('document.querySelector(".library-item").href');
+  await evaluate('document.querySelector(".pagination a:last-child").click()');
+  assert.equal(await evaluate('new URLSearchParams(location.search).get("page")'),'2');
+  assert.notEqual(await evaluate('document.querySelector(".library-item").href'),firstArticle);
+  assert.equal(await evaluate('document.activeElement.id'),'library-results');
+  await evaluate('document.querySelector(".library-item").click()');
+  await evaluate('history.back()');
+  await until(()=>evaluate(`!!document.querySelector('.pagination [aria-current="page"]')`),'return to library');
+  assert.equal(await evaluate('new URLSearchParams(location.search).get("page")'),'2');
+  await evaluate('const filter=document.querySelector("#library-filter");filter.value="no-match-xyz";filter.dispatchEvent(new Event("input",{bubbles:true}))');
+  assert.equal(await evaluate('document.querySelectorAll(".library-item").length'),0);
+  assert.equal(await evaluate('new URLSearchParams(location.search).has("page")'),false);
+  assert.equal(await evaluate('new URLSearchParams(location.search).get("q")'),'no-match-xyz');
+  console.log('PASS pagination, article return, filter reset and empty results');
   await visit('/ja/artigo/Missing%20translation');
   await until(()=>evaluate('!!document.querySelector(".article-language.is-fallback")'),'fallback notice');
   assert.equal(await evaluate('document.querySelector("#article-live").lang'),'en');
@@ -135,6 +151,39 @@ try{
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
   await send('Page.navigate',{url:'http://localhost:4197/'});
   await until(()=>evaluate('location.pathname==="/en/"&&!!document.querySelector(".hero")'),'saved locale');
+  // Capture actual typography and image loading separately from deterministic flow tests.
+  await send('Network.setBlockedURLs',{urls:['https://dl.flathub.org/*']});
+  const screenshotDir=path.resolve('artifacts/ui');
+  await mkdir(screenshotDir,{recursive:true});
+  for(const [name,width,light] of [['desktop-dark',1440,false],['mobile-dark',390,false],['desktop-light',1440,true]]){
+    await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<851});
+    await visit('/pt-br/');
+    await evaluate(`document.body.classList.toggle('light-mode',${light})`);
+    await evaluate('document.fonts.ready');
+    assert.equal(await evaluate(`document.fonts.check('400 32px Fraunces')&&document.fonts.check('400 16px "Source Sans 3"')`),true,'Display and interface fonts must load');
+    assert.equal(await evaluate(`(async()=>{const image=new Image();image.src='/images/homestead.jpg';await image.decode();return image.naturalWidth>0})()`),true);
+    assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth'),true,`Screenshot overflow: ${name}`);
+    await pause(350);
+    const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+    await writeFile(path.join(screenshotDir,name+'.png'),Buffer.from(screenshot.data,'base64'));
+  }
+  for(const [name,route,width] of [['desktop-library','/biblioteca',1440],['mobile-article','/artigo/Getting%20started',390],['mobile-reading','/artigo/Getting%20started',390],['desktop-sections','/',1440]]){
+    await send('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<851});
+    await visit('/pt-br'+route);
+    await evaluate("document.body.classList.remove('light-mode')");
+    if(route.startsWith('/artigo/'))await until(()=>evaluate('!!document.querySelector("#article-live h2")'),'article screenshot');
+    await evaluate('document.fonts.ready');
+    if(name==='mobile-reading')await evaluate("document.querySelector('#article-live').scrollIntoView({behavior:'instant'})");
+    if(name==='desktop-sections'){
+      await evaluate("document.querySelector('#categorias').scrollIntoView({behavior:'instant'})");
+      await pause(800);
+    }
+    assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth'),true,`Screenshot overflow: ${name}`);
+    await pause(350);
+    const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+    await writeFile(path.join(screenshotDir,name+'.png'),Buffer.from(screenshot.data,'base64'));
+  }
+  console.log('PASS real fonts, local images and desktop/mobile screenshots');
   assert.deepEqual(errors,[]);
   console.log('PASS fallback, language switching, shared favorites, translated search/filters, responsive widths and saved preference');
 }finally{

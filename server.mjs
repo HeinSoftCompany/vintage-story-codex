@@ -14,10 +14,14 @@ http.createServer(async(req,res)=>{
    const adapter={status(n){res.statusCode=n;return this},json(o){res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify(o))},send(t){res.end(t)},setHeader(k,v){res.setHeader(k,v)}};
    await handler(req,adapter);return;
   }
-  const target=path.resolve(root, pathname.startsWith('/data/') ? './public'+pathname : '.'+pathname);
+  const publicAsset=pathname.startsWith('/data/')||pathname.startsWith('/images/');
+  const target=path.resolve(root, publicAsset ? './public'+pathname : '.'+pathname);
   if(!target.startsWith(root+path.sep)&&target!==root){res.writeHead(403);res.end('Forbidden');return;}
   let data,extension=path.extname(target);
-  try{data=await fs.readFile(target)}catch{data=await fs.readFile(path.join(root,'index.html'));extension='.html';}
+  try{data=await fs.readFile(target)}catch{
+   if(publicAsset){res.writeHead(404);res.end('Not found');return;}
+   data=await fs.readFile(path.join(root,'index.html'));extension='.html';
+  }
   res.setHeader('Content-Type',mime[extension]||'application/octet-stream');res.setHeader('Cache-Control','no-store');res.end(data);
  }catch(err){res.writeHead(500);res.end(String(err.message))}
 }).listen(port,()=>console.log(`Vintage Story Codex Brasil — http://localhost:${port}`));

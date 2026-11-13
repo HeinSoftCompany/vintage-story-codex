@@ -5,7 +5,7 @@ import { locales, getLocale, setLocale, localeInfo, routeLocale, isLocale, unloc
 import { t, localizeHtml } from './i18n.js';
 
 const app = document.querySelector('#app');
-const state = { searchOpen: false, searchText: '', searchRemote: [], searchBusy: false, searchError:false, mobileOpen:false, libraryVisible:40, categoryFilter:'', libraryFilter:'', routeKey:0, dayNightOpen:false, motionStep:0, walkStage:0 };
+const state = { searchOpen: false, searchText: '', searchRemote: [], searchBusy: false, searchError:false, mobileOpen:false, categoryFilter:'', libraryFilter:'', routeKey:0, dayNightOpen:false, motionStep:0, walkStage:0 };
 const safe = (s='') => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const urlArticle = slug => '/artigo/' + encodeURIComponent(slug);
 const urlCategory = id => '/categoria/' + encodeURIComponent(id);
@@ -154,17 +154,36 @@ function combinedIndex(){
  const collected = getIndex().map(p => ({label:p.label||p.title?.replace(/\/pt-br$/i,'')||p.slug,slug:p.slug||(p.title||'').replace(/\/pt-br$/i,''),categoryName:p.categoryName||'Artigo da wiki',cacheUrl:p.cacheUrl})).filter(p=>p.slug);
  return [...new Map([...collected,...uniqueCurated].map(p=>[keyForSlug(p.slug),p])).values()].sort((a,b)=>t(a.label).localeCompare(t(b.label),localeInfo().lang));
 }
+function libraryUrl(page=1,query=state.libraryFilter){
+ const url=new URL(location.href);
+ if(page>1)url.searchParams.set('page',page);else url.searchParams.delete('page');
+ if(query)url.searchParams.set('q',query);else url.searchParams.delete('q');
+ return url.pathname+url.search;
+}
+function renderPagination(page,pages,total,start,end){
+ if(!total)return '';
+ const link=(n,label)=>`<a data-route href="${safe(libraryUrl(n))}" ${n===page?'aria-current="page"':''}>${label}</a>`;
+ const numbers=[...new Set([1,page-1,page,page+1,pages])].filter(n=>n>0&&n<=pages).sort((a,b)=>a-b);
+ return `<nav class="pagination" aria-label="Paginação"><p role="status">${start}–${end} / ${total}</p><div class="pagination-controls">${page>1?link(page-1,t('Anterior')):`<span aria-disabled="true">${t('Anterior')}</span>`}${numbers.map((n,i)=>`${i&&n-numbers[i-1]>1?'<span class="pagination-gap" aria-hidden="true">…</span>':''}${link(n,`<span class="sr-only">${t('Página')} </span>${n}`)}`).join('')}${page<pages?link(page+1,t('Próximo')):`<span aria-disabled="true">${t('Próximo')}</span>`}</div></nav>`;
+}
 function renderLibrary(favorites=false){
+ state.libraryFilter=new URLSearchParams(location.search).get('q')||'';
  let entries = favorites ? getSaved().map(slug=>findArticle(slug)||getIndex().find(p=>keyForSlug(p.slug||p.title)===keyForSlug(slug))||{slug,label:formatTitle(slug),categoryName:'Salvo'}) : combinedIndex();
  entries=entries.map(p=>({...p,slug:p.slug||(p.title||'').replace(/\/pt-br$/i,''),label:p.label||(p.title||p.slug),categoryName:p.categoryName||'Wiki PT-BR'}));
  const total=entries.length;
  const q=fold(state.libraryFilter);
  entries=entries.filter(p=>fold(t(p.label)+' '+p.slug+' '+t(p.categoryName)).includes(q));
- const shown=entries.slice(0,state.libraryVisible);
+ const requested=Number(new URLSearchParams(location.search).get('page'));
+ const pages=Math.max(1,Math.ceil(entries.length/40));
+ const page=Math.min(pages,Math.max(1,Number.isSafeInteger(requested)?requested:1));
+ const start=(page-1)*40;
+ const shown=entries.slice(start,start+40);
+ const canonical=libraryUrl(page);
+ if(location.pathname+location.search!==canonical)history.replaceState(null,'',canonical+location.hash);
  return wrap(`${breadcrumbs([{label:favorites?'Artigos salvos':'Biblioteca'}])}<section class="category-hero" style="--cat-color:#c3b186"><div class="eyebrow">ARQUIVO / ${favorites?'SUA COLEÇÃO':'ACERVO COMPLETO'}</div><h1>${favorites?'Suas descobertas.':'Toda a biblioteca.'}</h1><p>${favorites?'Artigos que você marcou para consultar depois, guardados neste navegador.':'Explore a curadoria e o índice da wiki. Os artigos abrem no idioma escolhido quando houver tradução.'}</p><div class="category-count">${total} ARTIGOS NO ÍNDICE</div></section>
  <div class="library-toolbar"><p>${entries.length} artigos encontrados ${getIndex().length?'· índice sincronizado':'· seleção inicial'}${favorites?' · seus favoritos':''}</p><input id="library-filter" class="mini-filter" placeholder="Filtrar biblioteca..." aria-label="Filtrar biblioteca" type="search" value="${safe(state.libraryFilter)}"></div>
  <div id="library-results">${shown.length?`<div class="library-items">${shown.map(it=>`<a data-route href="${urlArticle(it.slug)}" class="library-item">${icon('book')}<div class="library-label"><strong>${safe(formatTitle(it.label))}</strong><span>${safe(it.categoryName)}</span></div><span class="arr">${icon('arrow-up-right')}</span></a>`).join('')}</div>`:`<div class="no-results">${favorites?'Você ainda não salvou artigos, ou a busca não encontrou correspondências.':'Nenhum artigo corresponde à busca.'}</div>`}</div>
- ${entries.length>shown.length?`<div class="results-more"><button data-action="more" data-amount="40">Carregar mais ${Math.min(40,entries.length-shown.length)} artigos ${icon('arrow-right')}</button></div>`:''}
+ ${renderPagination(page,pages,entries.length,start+1,start+shown.length)}
  <div class="cat-more"><span>Não encontrou? A pesquisa também consulta a wiki original.</span><button class="section-action" data-action="search">Abrir pesquisa ${icon('search')}</button></div>`);
 }
 function renderArticleShell(slug){
@@ -267,7 +286,7 @@ function navigate(to){
  if(!to)return;
  if(!isLocale(routeLocale(to)))to=localizedPath(to);
  if(location.pathname!==to)history.pushState(null,'',to);
- state.mobileOpen=false;state.categoryFilter='';state.libraryFilter='';state.libraryVisible=40;
+ state.mobileOpen=false;state.categoryFilter='';state.libraryFilter='';
  closeSearch();state.searchRemote=[];clearTimeout(searchTimer);render();window.scrollTo({top:0,behavior:'instant'});
 }
 
@@ -307,7 +326,7 @@ function updateBackToTop(){document.querySelector('.back-top')?.classList.toggle
 // Todas as ações são delegadas. Assim os novos artigos e resultados continuam navegáveis.
 document.addEventListener('click',async e=>{
  const link=e.target.closest('a[data-route]');
- if(link){if(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey||e.button!==0)return;e.preventDefault();navigate(link.pathname+link.search+link.hash);return;}
+ if(link){if(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey||e.button!==0)return;e.preventDefault();const pagination=!!link.closest('.pagination');navigate(link.pathname+link.search+link.hash);if(pagination){const target=document.querySelector('#library-results');target?.setAttribute('tabindex','-1');target?.focus({preventScroll:true});target?.scrollIntoView({block:'start'});}return;}
  const btn=e.target.closest('[data-action]');if(!btn)return;
  const action=btn.dataset.action;
  if(action==='mobile'){state.mobileOpen=!state.mobileOpen;render();return;}
@@ -323,7 +342,6 @@ document.addEventListener('click',async e=>{
  if(action==='walk-stage'){state.walkStage=Number(btn.dataset.step)||0;document.querySelectorAll('.vs-walk-buttons button').forEach((el,i)=>{el.classList.toggle('is-current',i===state.walkStage);el.setAttribute('aria-pressed',String(i===state.walkStage))});document.querySelectorAll('.vs-walk-group').forEach((el,i)=>el.classList.toggle('is-current',i===state.walkStage));return;}
  if(action==='jump-wiki'){document.getElementById(btn.dataset.target)?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});return;}
  if(action==='backtop'){window.scrollTo({top:0,behavior:'smooth'});return;}
- if(action==='more'){state.libraryVisible+=Number(btn.dataset.amount)||40;render();return;}
  if(action==='bookmark'){
   const slug=btn.dataset.slug;let saved=getSaved();const prev=saved.some(k=>keyForSlug(k)===keyForSlug(slug));saved=prev?saved.filter(k=>keyForSlug(k)!==keyForSlug(slug)):[...saved,slug];try{localStorage.setItem('vsc-favorites',JSON.stringify(saved))}catch{}render();return;
  }
@@ -348,7 +366,7 @@ document.addEventListener('input',e=>{
   const cat=findCategory(route.key),q=fold(state.categoryFilter),groups=topicGroups(cat).map(g=>({...g,items:g.items.filter(it=>fold(t(it.label)+' '+it.slug+' '+t(it.note)).includes(q))})).filter(g=>g.items.length);
   document.querySelector('#category-results').innerHTML=localizeHtml(groups.length?groups.map(g=>`<div class="topic-group"><div class="topic-group-title"><h3>${safe(g.name)}</h3><span>${g.items.length} ARTIGOS</span></div>${g.items.map(topicRow).join('')}</div>`).join(''):'<div class="no-results">Nenhum artigo corresponde à sua pesquisa nesta categoria.</div>');
  }}
- if(e.target.id==='library-filter'){state.libraryFilter=e.target.value;const route=currentRoute();const slot=document.querySelector('#page-slot');const point=window.scrollY;slot.innerHTML=renderLibrary(route.type==='favorites');window.scrollTo({top:point,behavior:'instant'});document.querySelector('#library-filter')?.focus();document.querySelector('#library-filter')?.setSelectionRange(state.libraryFilter.length,state.libraryFilter.length);}
+ if(e.target.id==='library-filter'){state.libraryFilter=e.target.value;history.replaceState(null,'',libraryUrl(1));const route=currentRoute();const slot=document.querySelector('#page-slot');const point=window.scrollY;slot.innerHTML=renderLibrary(route.type==='favorites');window.scrollTo({top:point,behavior:'instant'});document.querySelector('#library-filter')?.focus();document.querySelector('#library-filter')?.setSelectionRange(state.libraryFilter.length,state.libraryFilter.length);}
 });
 document.addEventListener('keydown',e=>{
  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openSearch();return;}

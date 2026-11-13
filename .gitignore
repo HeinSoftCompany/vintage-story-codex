@@ -2,6 +2,7 @@
 /dist/
 # Dependências e arquivos locais
 /node_modules/
+/artifacts/
 .vercel/
 .env
 .env.*

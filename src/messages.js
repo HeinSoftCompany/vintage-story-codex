@@ -337,4 +337,8 @@ Idade do Bronze|Bronze Age|Edad del Bronce|Bronzezeit|Âge du bronze|青銅器�
 Ligas e forja|Alloys and smithing|Aleaciones y forja|Legierungen und Schmieden|Alliages et forge|合金と鍛冶
 Idade do Ferro|Iron Age|Edad del Hierro|Eisenzeit|Âge du fer|鉄器時代
 Metalurgia avançada|Advanced metallurgy|Metalurgia avanzada|Fortgeschrittene Metallurgie|Métallurgie avancée|高度な冶金
+Paginação|Pagination|Paginación|Seitennavigation|Pagination|ページ送り
+Página|Page|Página|Seite|Page|ページ
+Anterior|Previous|Anterior|Zurück|Précédent|前へ
+Próximo|Next|Siguiente|Weiter|Suivant|次へ
 `;
